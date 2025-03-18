@@ -84,6 +84,9 @@ function createHomeElement(home) {
                 <button class="btn secondary-btn manage-home" data-home-id="${home.homeId}">
                     <i class="fas fa-cog"></i> Manage
                 </button>
+                <button class="btn danger-btn delete-home" data-home-id="${home.homeId}">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
             ` : ''}
         </div>
     `;
@@ -95,6 +98,11 @@ function createHomeElement(home) {
     const manageBtn = div.querySelector('.manage-home');
     if (manageBtn) {
         manageBtn.addEventListener('click', () => manageHome(home.homeId));
+    }
+
+    const deleteBtn = div.querySelector('.delete-home');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => deleteHome(home.homeId));
     }
 
     return div;
@@ -118,6 +126,34 @@ function enterHome(homeId) {
 function manageHome(homeId) {
     // Redirect to home management page
     window.location.href = `manage-home.html?id=${homeId}`;
+}
+
+// Delete a home
+async function deleteHome(homeId) {
+    if (!confirm('Are you sure you want to delete this home? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const token = await firebase.auth().currentUser.getIdToken();
+        const response = await fetch(`/api/homes/${homeId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to delete home');
+        }
+        
+        showNotification('Home deleted successfully', 'success');
+        loadUserHomes(token); // Reload the homes list
+    } catch (error) {
+        console.error('Delete home error:', error);
+        showNotification(error.message || 'Failed to delete home', 'error');
+    }
 }
 
 // Create new home

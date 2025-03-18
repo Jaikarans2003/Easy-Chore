@@ -28,10 +28,11 @@ const HomeDataCache = {
         if (storedValue) {
             try {
                 const homeData = JSON.parse(storedValue);
-                if (homeData.homeId === homeId) {
-                    console.log('Using cached home data for:', homeId);
-                    return homeData;
+                // If homeId is provided, check if it matches
+                if (homeId && homeData.homeId !== homeId) {
+                    return null;
                 }
+                return homeData;
             } catch (e) {
                 console.error('Error parsing cached home data:', e);
             }

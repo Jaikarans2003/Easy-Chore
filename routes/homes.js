@@ -605,4 +605,51 @@ router.post('/remove-member', verifyToken, async (req, res) => {
   }
 });
 
+// Delete a home
+router.delete('/:homeId', verifyToken, async (req, res) => {
+  try {
+    const homeId = req.params.homeId;
+    const userId = req.user.uid;
+    console.log(`Deleting home with ID: ${homeId} by user: ${userId}`);
+    
+    if (global.useMockData) {
+      console.log('Using mock data for deleting home');
+      return res.status(200).json({ message: 'Home deleted successfully' });
+    }
+    
+    // Find the home by homeId
+    const home = await Home.findOne({ homeId });
+    
+    if (!home) {
+      return res.status(404).json({ message: 'Home not found' });
+    }
+    
+    // Check if the user is the creator of the home
+    if (home.createdBy !== userId) {
+      return res.status(403).json({ message: 'Only the creator of the home can delete it' });
+    }
+    
+    // Delete the home
+    await Home.deleteOne({ homeId });
+    
+    // Remove home from all users' homes array
+    await User.updateMany(
+      { 'homes': home._id },
+      { $pull: { 'homes': home._id } }
+    );
+    
+    // Also delete all associated chores and expenses
+    const Chore = require('../models/Chore');
+    const Expense = require('../models/Expense');
+    
+    await Chore.deleteMany({ homeId });
+    await Expense.deleteMany({ homeId });
+    
+    res.status(200).json({ message: 'Home deleted successfully' });
+  } catch (error) {
+    console.error('Delete home error:', error);
+    res.status(500).json({ message: 'Server error', details: error.message });
+  }
+});
+
 module.exports = router;

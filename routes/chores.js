@@ -159,23 +159,48 @@ router.put('/:id', verifyToken, async (req, res) => {
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const choreId = req.params.id;
-    console.log(`Deleting chore with ID: ${choreId}`);
+    const userId = req.user.uid;
+    console.log(`Deleting chore with ID: ${choreId} by user: ${userId}`);
     
     if (global.useMockData) {
       console.log('Using mock data for deleting chore');
       return res.status(200).json({ message: 'Chore deleted successfully' });
     }
     
-    const chore = await Chore.findByIdAndDelete(choreId);
+    // Find the chore
+    const chore = await Chore.findById(choreId);
     
     if (!chore) {
       return res.status(404).json({ message: 'Chore not found' });
     }
     
+    // Find the home to check permissions
+    const home = await Home.findOne({ homeId: chore.homeId });
+    
+    if (!home) {
+      return res.status(404).json({ message: 'Home not found for this chore' });
+    }
+    
+    // Check if the user added this chore (based on user name matching the doneBy field)
+    // We don't have a direct createdBy field in chores, so we'll use doneBy as a proxy
+    // or allow home creator to delete any chore
+    const userMember = home.members.find(member => member.uid === userId);
+    const isHomeCreator = home.createdBy === userId;
+    const isChoreCreator = userMember && userMember.name === chore.doneBy;
+    
+    if (!isHomeCreator && !isChoreCreator) {
+      return res.status(403).json({ 
+        message: 'Only the creator of the chore or the home creator can delete it' 
+      });
+    }
+    
+    // Delete the chore
+    await Chore.findByIdAndDelete(choreId);
+    
     res.status(200).json({ message: 'Chore deleted successfully' });
   } catch (error) {
     console.error('Delete chore error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error', details: error.message });
   }
 });
 

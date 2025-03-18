@@ -8,7 +8,7 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3002;
 
 // Middleware
 app.use(cors());
@@ -68,23 +68,11 @@ const startServer = () => {
     res.sendFile(path.join(__dirname, 'public', 'view-expenses.html'));
   });
 
-  // Start server with error handling
-  const server = app.listen(PORT, () => {
+  // Start the server with a simple approach
+  app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Open http://localhost:${PORT} in your browser`);
     console.log(global.useMockData ? 'Using MOCK data (no MongoDB)' : 'Using real MongoDB data');
-  }).on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      console.log(`Port ${PORT} is already in use. Trying port ${PORT + 1}...`);
-      // Try the next port
-      const newServer = app.listen(PORT + 1, () => {
-        console.log(`Server running on port ${PORT + 1}`);
-        console.log(`Open http://localhost:${PORT + 1} in your browser`);
-        console.log(global.useMockData ? 'Using MOCK data (no MongoDB)' : 'Using real MongoDB data');
-      });
-    } else {
-      console.error('Server error:', err);
-    }
   });
 };
 

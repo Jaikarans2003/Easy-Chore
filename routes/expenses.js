@@ -238,27 +238,55 @@ router.put('/:id/debtors/:debtorIndex', verifyToken, async (req, res) => {
   }
 });
 
+// Update expense by ID
+router.put('/:id', verifyToken, async (req, res) => {
+  // ... existing code ...
+});
+
 // Delete an expense
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const expenseId = req.params.id;
-    console.log(`Deleting expense with ID: ${expenseId}`);
+    const userId = req.user.uid;
+    console.log(`Deleting expense with ID: ${expenseId} by user: ${userId}`);
     
     if (global.useMockData) {
       console.log('Using mock data for deleting expense');
       return res.status(200).json({ message: 'Expense deleted successfully' });
     }
     
-    const expense = await Expense.findByIdAndDelete(expenseId);
+    // Find the expense
+    const expense = await Expense.findById(expenseId);
     
     if (!expense) {
       return res.status(404).json({ message: 'Expense not found' });
     }
     
+    // Find the home to check permissions
+    const home = await Home.findOne({ homeId: expense.homeId });
+    
+    if (!home) {
+      return res.status(404).json({ message: 'Home not found for this expense' });
+    }
+    
+    // Check if the user is the payer of this expense or the home creator
+    const userMember = home.members.find(member => member.uid === userId);
+    const isHomeCreator = home.createdBy === userId;
+    const isExpensePayer = userMember && userMember.name === expense.payer;
+    
+    if (!isHomeCreator && !isExpensePayer) {
+      return res.status(403).json({ 
+        message: 'Only the payer of the expense or the home creator can delete it' 
+      });
+    }
+    
+    // Delete the expense
+    await Expense.findByIdAndDelete(expenseId);
+    
     res.status(200).json({ message: 'Expense deleted successfully' });
   } catch (error) {
     console.error('Delete expense error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error', details: error.message });
   }
 });
 

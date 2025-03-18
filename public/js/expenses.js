@@ -342,49 +342,8 @@ function loadExpenses() {
                 new Date(b.date) - new Date(a.date)
             );
             
-            // Display expenses
-            sortedExpenses.forEach(expense => {
-                const expenseDate = new Date(expense.date);
-                const formattedDate = expenseDate.toLocaleDateString();
-                
-                const listItem = document.createElement('li');
-                listItem.className = 'list-item';
-                
-                // Calculate total paid amount
-                const totalPaid = expense.debtors.reduce((sum, debtor) => sum + (debtor.paid ? debtor.amount : 0), 0);
-                const totalAmount = expense.debtors.reduce((sum, debtor) => sum + debtor.amount, 0);
-                const progress = (totalPaid / totalAmount) * 100;
-                
-                listItem.innerHTML = `
-                    <div class="list-item-content">
-                        <div class="list-item-title">${expense.reason}</div>
-                        <div class="list-item-subtitle">
-                            Paid by ${expense.payer} on ${formattedDate}
-                            <br>
-                            Amount: $${expense.amount.toFixed(2)}
-                        </div>
-                        <div class="list-item-notes">
-                            <div class="progress-bar">
-                                <div class="progress" style="width: ${progress}%"></div>
-                            </div>
-                            <div class="debtors-list">
-                                ${expense.debtors.map(debtor => `
-                                    <div class="debtor ${debtor.paid ? 'paid' : ''}">
-                                        ${debtor.name}: $${debtor.amount.toFixed(2)}
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                // Add click handler to toggle payment status
-                listItem.addEventListener('click', function() {
-                    showExpenseDetails(expense);
-                });
-                
-                expensesList.appendChild(listItem);
-            });
+            // Use the displayExpenses function instead of the inline code
+            displayExpenses(sortedExpenses);
         })
         .catch(error => {
             console.error('Error loading expenses:', error);
@@ -474,4 +433,88 @@ function showAlert(message, type) {
     setTimeout(() => {
         alertDiv.remove();
     }, 3000);
+}
+
+// Display expenses in the UI
+function displayExpenses(expenses) {
+    const expensesList = document.getElementById('expenses-list');
+    if (!expensesList) return;
+
+    expensesList.innerHTML = '';
+    
+    expenses.forEach(expense => {
+        const expenseCard = document.createElement('div');
+        expenseCard.className = 'expense-card';
+        expenseCard.innerHTML = `
+            <div class="expense-header">
+                <h3>${expense.reason}</h3>
+                <div class="expense-actions">
+                    ${canDeleteExpense(expense) ? `<button class="btn-icon delete-btn" onclick="deleteExpense('${expense._id}')" title="Delete Expense">
+                        <i class="fas fa-trash"></i>
+                    </button>` : ''}
+                </div>
+            </div>
+            <p class="expense-details">
+                Paid by: ${expense.payer}<br>
+                Amount: $${expense.amount.toFixed(2)}<br>
+                Date: ${new Date(expense.date).toLocaleDateString()}<br>
+                Split Type: ${expense.splitType}
+            </p>
+            <div class="debtors-list">
+                <h4>Debtors:</h4>
+                <ul>
+                    ${expense.debtors.map(debtor => `
+                        <li>
+                            ${debtor.name}: $${debtor.amount.toFixed(2)}
+                            ${debtor.paid ? '<span class="paid-badge">Paid</span>' : ''}
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+        `;
+        expensesList.appendChild(expenseCard);
+    });
+}
+
+// Check if user can delete an expense
+function canDeleteExpense(expense) {
+    const homeData = HomeDataCache.getHome();
+    if (!homeData) return false;
+    
+    const currentUser = firebase.auth().currentUser;
+    if (!currentUser) return false;
+    
+    const userMember = homeData.members.find(member => member.uid === currentUser.uid);
+    const isHomeCreator = homeData.createdBy === currentUser.uid;
+    const isExpensePayer = userMember && userMember.name === expense.payer;
+    
+    return isHomeCreator || isExpensePayer;
+}
+
+// Delete an expense
+async function deleteExpense(expenseId) {
+    if (!confirm('Are you sure you want to delete this expense?')) {
+        return;
+    }
+    
+    try {
+        const token = await firebase.auth().currentUser.getIdToken();
+        const response = await fetch(`/api/expenses/${expenseId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to delete expense');
+        }
+        
+        showAlert('Expense deleted successfully', 'success');
+        loadExpenses(); // Reload the expenses list
+    } catch (error) {
+        console.error('Delete expense error:', error);
+        showAlert(error.message || 'Failed to delete expense', 'error');
+    }
 }

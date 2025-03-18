@@ -480,50 +480,79 @@ function loadChores() {
         });
 }
 
-// Display chores in the list
+// Display chores in the UI
 function displayChores(chores) {
     const choresList = document.getElementById('chores-list');
-    
-    // Clear list
+    if (!choresList) return;
+
     choresList.innerHTML = '';
     
-    if (chores.length === 0) {
-        choresList.innerHTML = '<li class="list-item empty">No chores match the selected filter.</li>';
+    chores.forEach(chore => {
+        const choreCard = document.createElement('div');
+        choreCard.className = 'chore-card';
+        choreCard.innerHTML = `
+            <div class="chore-header">
+                <h3>${chore.choreType}</h3>
+                <div class="chore-actions">
+                    ${chore.photoUrl ? `<button class="btn-icon" onclick="openPhotoModal('${chore.photoUrl}')" title="View Photo">
+                        <i class="fas fa-camera"></i>
+                    </button>` : ''}
+                    ${canDeleteChore(chore) ? `<button class="btn-icon delete-btn" onclick="deleteChore('${chore._id}')" title="Delete Chore">
+                        <i class="fas fa-trash"></i>
+                    </button>` : ''}
+                </div>
+            </div>
+            <p class="chore-details">
+                Done by: ${chore.doneBy}<br>
+                Date: ${new Date(chore.date).toLocaleDateString()}<br>
+                ${chore.notes ? `Notes: ${chore.notes}` : ''}
+            </p>
+        `;
+        choresList.appendChild(choreCard);
+    });
+}
+
+// Check if user can delete a chore
+function canDeleteChore(chore) {
+    const homeData = HomeDataCache.getHome();
+    if (!homeData) return false;
+    
+    const currentUser = firebase.auth().currentUser;
+    if (!currentUser) return false;
+    
+    const userMember = homeData.members.find(member => member.uid === currentUser.uid);
+    const isHomeCreator = homeData.createdBy === currentUser.uid;
+    const isChoreCreator = userMember && userMember.name === chore.doneBy;
+    
+    return isHomeCreator || isChoreCreator;
+}
+
+// Delete a chore
+async function deleteChore(choreId) {
+    if (!confirm('Are you sure you want to delete this chore?')) {
         return;
     }
     
-    // Sort chores by date (newest first)
-    chores.sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    // Display chores
-    chores.forEach(chore => {
-        const choreDate = new Date(chore.date);
-        const formattedDate = choreDate.toLocaleDateString();
-        const formattedTime = choreDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    try {
+        const token = await firebase.auth().currentUser.getIdToken();
+        const response = await fetch(`/api/chores/${choreId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
         
-        const listItem = document.createElement('li');
-        listItem.className = 'list-item';
-        
-        let photoHtml = '';
-        if (chore.photoUrl) {
-            photoHtml = `
-                <div class="list-item-photo">
-                    <img src="${chore.photoUrl}" alt="Chore Photo" onclick="openPhotoModal('${chore.photoUrl}')">
-                </div>
-            `;
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to delete chore');
         }
         
-        listItem.innerHTML = `
-            <div class="list-item-content">
-                <div class="list-item-title">${chore.choreType}</div>
-                <div class="list-item-subtitle">Done by ${chore.doneBy} on ${formattedDate} at ${formattedTime}</div>
-                ${chore.notes ? `<div class="list-item-notes">${chore.notes}</div>` : ''}
-            </div>
-            ${photoHtml}
-        `;
-        
-        choresList.appendChild(listItem);
-    });
+        showAlert('Chore deleted successfully', 'success');
+        loadChores(); // Reload the chores list
+    } catch (error) {
+        console.error('Delete chore error:', error);
+        showAlert(error.message || 'Failed to delete chore', 'error');
+    }
 }
 
 // Filter chores by type
