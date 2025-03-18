@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create or Join Home - Easy Chore</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <h1>Easy Chore</h1>
+        </div>
+        <nav>
+            <button id="logout-btn" class="btn secondary-btn">Logout</button>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <h2>Welcome to Easy Chore</h2>
+            <p>Create a new home or join an existing one to get started</p>
+        </div>
+
+        <div class="option-cards">
+            <div class="option-card" id="create-home-card">
+                <div class="option-icon">
+                    <i class="fas fa-plus-circle"></i>
+                </div>
+                <h3>Create a New Home</h3>
+                <p>Start a new home and invite members</p>
+                <button class="btn primary-btn">Create Home</button>
+            </div>
+
+            <div class="option-card" id="join-home-card">
+                <div class="option-icon">
+                    <i class="fas fa-sign-in-alt"></i>
+                </div>
+                <h3>Join an Existing Home</h3>
+                <p>Join a home using a Home ID</p>
+                <button class="btn primary-btn">Join Home</button>
+            </div>
+        </div>
+
+        <!-- Create Home Form (Hidden by default) -->
+        <div class="form-container" id="create-home-form" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Create a New Home</h3>
+                    <button class="btn-back"><i class="fas fa-arrow-left"></i> Back</button>
+                </div>
+                <form id="create-home">
+                    <div class="form-group">
+                        <label for="home-name">Home Name</label>
+                        <input type="text" id="home-name" placeholder="e.g. My Apartment" required>
+                    </div>
+                    
+                    <div id="members-container">
+                        <h4>Add Members (Optional)</h4>
+                        <p class="help-text">Add people who will be sharing this home with you</p>
+                        
+                        <div class="member-inputs">
+                            <div class="form-group">
+                                <label for="member-name-1">Name</label>
+                                <input type="text" id="member-name-1" placeholder="Member's name">
+                            </div>
+                            <div class="form-group">
+                                <label for="member-email-1">Email</label>
+                                <input type="email" id="member-email-1" placeholder="Member's email">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="button" id="add-member-btn" class="btn secondary-btn">
+                        <i class="fas fa-plus"></i> Add Another Member
+                    </button>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn primary-btn">Create Home</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Join Home Form (Hidden by default) -->
+        <div class="form-container" id="join-home-form" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Join an Existing Home</h3>
+                    <button class="btn-back"><i class="fas fa-arrow-left"></i> Back</button>
+                </div>
+                <form id="join-home">
+                    <div class="form-group">
+                        <label for="home-id">Home ID</label>
+                        <input type="text" id="home-id" placeholder="Enter the Home ID" required>
+                        <p class="help-text">Ask the home creator for the Home ID</p>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn primary-btn">Join Home</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2023 Easy Chore. All rights reserved.</p>
+    </footer>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/home.js"></script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Expenses - Easy Chore</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>Easy Chore</h1>
+                <div class="current-home">
+                    Current Home: <span id="current-home-name">Loading...</span>
+                </div>
+            </div>
+            <nav>
+                <a href="dashboard.html" class="btn secondary-btn">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <a href="add-expense.html" class="btn primary-btn">
+                    <i class="fas fa-plus"></i> Add Expense
+                </a>
+                <button id="logout-btn" class="btn secondary-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </nav>
+        </header>
+
+        <main>
+            <div class="card">
+                <div class="card-header">
+                    <h2>Expense History</h2>
+                </div>
+                <div class="list-container">
+                    <ul id="expenses-list" class="list">
+                        <!-- Expenses will be loaded here -->
+                    </ul>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Easy Chore. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-auth-compat.js"></script>
+    
+    <!-- App Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/expenses.js"></script>
+</body>
+</html>

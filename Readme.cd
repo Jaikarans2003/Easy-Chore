@@ -1,0 +1,31 @@
+D:\Easy Chore\home-chore-app\
+├── public\
+│   ├── css\
+│   │   └── styles.css
+│   ├── js\
+│   │   ├── auth.js
+│   │   ├── home.js
+│   │   ├── chores.js
+│   │   └── expenses.js
+│   ├── index.html
+│   ├── dashboard.html
+│   ├── create-join-home.html
+│   ├── add-chore.html
+│   ├── view-chores.html
+│   ├── add-expense.html
+│   └── view-expenses.html
+├── models\
+│   ├── User.js
+│   ├── Home.js
+│   ├── Chore.js
+│   └── Expense.js
+├── routes\
+│   ├── auth.js
+│   ├── homes.js
+│   ├── chores.js
+│   └── expenses.js
+├── config\
+│   └── firebase.js
+├── .env
+└── server.js
+

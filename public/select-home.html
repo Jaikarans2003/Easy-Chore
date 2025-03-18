@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Home - Easy Chore</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>Easy Chore</h1>
+                <div class="user-info">
+                    Welcome, <span id="user-name">User</span>!
+                </div>
+            </div>
+            <nav>
+                <a href="create-join-home.html" class="btn primary-btn">
+                    <i class="fas fa-plus"></i> Create New Home
+                </a>
+                <button id="logout-btn" class="btn secondary-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </nav>
+        </header>
+
+        <main>
+            <div class="card">
+                <div class="card-header">
+                    <h2>Your Homes</h2>
+                    <p>Select a home to enter</p>
+                </div>
+                <div class="home-list-container">
+                    <ul id="homes-list" class="list">
+                        <!-- Homes will be loaded here -->
+                        <li class="list-item loading">Loading your homes...</li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Easy Chore. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
+    <!-- App Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/select-home.js"></script>
+</body>
+</html>

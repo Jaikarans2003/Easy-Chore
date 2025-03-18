@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Easy Chore</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>Easy Chore</h1>
+                <div class="current-home">
+                    Current Home: <span id="current-home-name">Loading...</span>
+                    <span id="home-id" class="home-id"></span>
+                </div>
+            </div>
+            <nav>
+                <button id="logout-btn" class="btn secondary-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </nav>
+        </header>
+
+        <main>
+            <div class="welcome-section">
+                <h2>Welcome, <span id="user-name">User</span>!</h2>
+                <p>Manage your home chores and expenses</p>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="dashboard-card" onclick="window.location.href='add-chore.html'">
+                    <i class="fas fa-broom dashboard-icon"></i>
+                    <h3>Add Chore</h3>
+                    <p>Record a completed chore</p>
+                </div>
+
+                <div class="dashboard-card" onclick="window.location.href='view-chores.html'">
+                    <i class="fas fa-list-check dashboard-icon"></i>
+                    <h3>View Chores</h3>
+                    <p>See all completed chores</p>
+                </div>
+
+                <div class="dashboard-card" onclick="window.location.href='add-expense.html'">
+                    <i class="fas fa-receipt dashboard-icon"></i>
+                    <h3>Add Expense</h3>
+                    <p>Record a new expense</p>
+                </div>
+
+                <div class="dashboard-card" onclick="window.location.href='view-expenses.html'">
+                    <i class="fas fa-dollar-sign dashboard-icon"></i>
+                    <h3>View Expenses</h3>
+                    <p>Track all expenses and payments</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Home Members</h3>
+                </div>
+                <ul id="members-list" class="list">
+                    <li class="list-item loading">Loading members...</li>
+                </ul>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Easy Chore. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    
+    <!-- App Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
