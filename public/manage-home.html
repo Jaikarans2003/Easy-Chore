@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Home - Easy Chore</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>Easy Chore</h1>
+                <div class="current-home">
+                    Current Home: <span id="current-home-name">Loading...</span>
+                </div>
+            </div>
+            <nav>
+                <a href="select-home.html" class="btn secondary-btn">
+                    <i class="fas fa-home"></i> Select Home
+                </a>
+                <a href="dashboard.html" class="btn secondary-btn">
+                    <i class="fas fa-tasks"></i> Dashboard
+                </a>
+                <button id="logout-btn" class="btn secondary-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </nav>
+        </header>
+
+        <main>
+            <div class="card">
+                <div class="card-header">
+                    <h2>Manage Home Members</h2>
+                </div>
+                
+                <div class="members-section">
+                    <h3>Current Members</h3>
+                    <div id="members-list" class="list-container">
+                        <!-- Members will be loaded here -->
+                    </div>
+                </div>
+
+                <div class="add-member-section">
+                    <h3>Add New Member</h3>
+                    <form id="add-member-form">
+                        <div class="form-group">
+                            <label for="member-email">Email Address</label>
+                            <input type="email" id="member-email" required 
+                                   placeholder="Enter member's email address">
+                        </div>
+                        <div class="form-group">
+                            <label for="member-name">Display Name</label>
+                            <input type="text" id="member-name" required 
+                                   placeholder="Enter member's display name">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn primary-btn">
+                                <i class="fas fa-user-plus"></i> Add Member
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Easy Chore. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- App Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/manage-home.js"></script>
+</body>
+</html> 

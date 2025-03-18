@@ -15,9 +15,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Set a flag to indicate we're using real data by default
-// This will be switched to true if MongoDB connection fails in development mode
-global.useMockData = false;
+// Configure mock data usage for development
+global.useMockData = false; // Set to false to use real database data
 
 // Log MongoDB connection details (without showing sensitive data)
 console.log('Attempting to connect to MongoDB...');

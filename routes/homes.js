@@ -280,60 +280,60 @@ router.post('/join', verifyToken, async (req, res) => {
   }
 });
 
-// Get home by ID
+// Get a single home by ID
 router.get('/:homeId', verifyToken, async (req, res) => {
   try {
-    const homeId = req.params.homeId;
-    console.log(`Getting home with ID: ${homeId}`);
+    const { homeId } = req.params;
+    const userId = req.user.uid;
+    
+    console.log(`Getting home ${homeId} for user ${userId}`);
     
     if (global.useMockData) {
-      console.log('Using mock data for home retrieval');
-      return res.status(200).json({ home: mockHome });
+      console.log('Using mock data for getting home by ID');
+      // Add isCreator flag to mock data
+      return res.status(200).json({ 
+        home: {
+          ...mockHome,
+          isCreator: mockHome.createdBy === userId
+        } 
+      });
     }
     
     try {
-      // Validate homeId
-      if (!homeId || homeId === 'undefined' || homeId === 'null') {
-        console.error('Invalid homeId provided:', homeId);
-        return res.status(400).json({ message: 'Invalid home ID' });
-      }
-      
-      const home = await Home.findOne({ homeId });
+      // Find home by homeId (string) field, not by _id (ObjectId)
+      const home = await Home.findOne({ homeId: homeId });
       
       if (!home) {
-        console.log(`Home with ID ${homeId} not found`);
-        
-        if (process.env.NODE_ENV === 'development') {
-          // Return mock home in development mode
-          console.log('DEV MODE: Returning mock home for non-existent home ID');
-          const customMockHome = {
-            ...mockHome,
-            homeId: homeId,
-            name: `Mock Home (${homeId})`
-          };
-          return res.status(200).json({ home: customMockHome });
-        }
-        
         return res.status(404).json({ message: 'Home not found' });
       }
       
-      console.log(`Found home: ${home.name} with ID ${homeId}`);
-      res.status(200).json({ home });
-    } catch (dbError) {
-      console.error('Database error retrieving home:', dbError);
+      // Check if user is a member of the home
+      const isMember = home.members.some(member => member.uid === userId);
       
-      if (process.env.NODE_ENV === 'development') {
-        // Create a custom mock home with the requested ID
-        console.log('DEV MODE: Returning mock home due to database error');
-        const customMockHome = {
-          ...mockHome,
-          homeId: homeId,
-          name: `Mock Home (${homeId})`
-        };
-        return res.status(200).json({ home: customMockHome });
+      if (!isMember) {
+        return res.status(403).json({ message: 'You are not a member of this home' });
       }
       
-      throw dbError; // Re-throw to be caught by outer catch
+      // Add flag to indicate if the user is the creator
+      const homeData = home.toObject();
+      homeData.isCreator = home.createdBy === userId;
+      
+      res.status(200).json({ home: homeData });
+    } catch (dbError) {
+      console.error('Database error getting home:', dbError);
+      
+      if (process.env.NODE_ENV === 'development') {
+        // Return mock data in development mode
+        console.log('DEV MODE: Returning mock home due to database error');
+        return res.status(200).json({ 
+          home: {
+            ...mockHome,
+            isCreator: mockHome.createdBy === userId
+          } 
+        });
+      }
+      
+      throw dbError;
     }
   } catch (error) {
     console.error('Get home error:', error);
@@ -347,28 +347,91 @@ router.get('/:homeId', verifyToken, async (req, res) => {
 // Get home members
 router.get('/:homeId/members', verifyToken, async (req, res) => {
   try {
-    const homeId = req.params.homeId;
-    console.log(`Getting members for home: ${homeId}`);
+    const { homeId } = req.params;
+    const userId = req.user.uid;
+    
+    console.log(`Getting members for home ${homeId}`);
     
     if (global.useMockData) {
       console.log('Using mock data for home members');
-      return res.status(200).json({ members: mockHome.members });
+      return res.status(200).json({ 
+        members: [
+          {
+            userId: 'mock-user-1',
+            name: 'Mock User 1',
+            email: 'user1@example.com',
+            isCreator: true
+          },
+          {
+            userId: 'mock-user-2',
+            name: 'Mock User 2',
+            email: 'user2@example.com',
+            isCreator: false
+          }
+        ] 
+      });
     }
     
-    const home = await Home.findOne({ homeId });
-    
-    if (!home) {
-      return res.status(404).json({ message: 'Home not found' });
+    try {
+      // Find home by homeId (string) field, not by _id (ObjectId)
+      const home = await Home.findOne({ homeId: homeId });
+      
+      if (!home) {
+        return res.status(404).json({ message: 'Home not found' });
+      }
+      
+      // Check if user is a member of the home
+      const isMember = home.members.some(member => member.uid === userId);
+      
+      if (!isMember) {
+        return res.status(403).json({ message: 'You are not a member of this home' });
+      }
+      
+      // Format members data
+      const members = home.members.map(member => ({
+        userId: member.uid,
+        name: member.name,
+        email: member.email,
+        isCreator: home.createdBy === member.uid
+      }));
+      
+      res.status(200).json({ members });
+    } catch (dbError) {
+      console.error('Database error getting home members:', dbError);
+      
+      if (process.env.NODE_ENV === 'development') {
+        // Return mock data in development mode
+        console.log('DEV MODE: Returning mock members due to database error');
+        return res.status(200).json({ 
+          members: [
+            {
+              userId: 'mock-user-1',
+              name: 'Mock User 1',
+              email: 'user1@example.com',
+              isCreator: true
+            },
+            {
+              userId: 'mock-user-2',
+              name: 'Mock User 2',
+              email: 'user2@example.com',
+              isCreator: false
+            }
+          ] 
+        });
+      }
+      
+      throw dbError;
     }
-    
-    res.status(200).json({ members: home.members });
   } catch (error) {
     console.error('Get home members error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      message: 'Error retrieving home members', 
+      details: error.message 
+    });
   }
 });
 
-// Add a member to a home
+// Add member to home
 router.post('/add-member', verifyToken, async (req, res) => {
   try {
     const { homeId, member } = req.body;
@@ -376,100 +439,167 @@ router.post('/add-member', verifyToken, async (req, res) => {
     
     console.log(`User ${userId} adding member to home ${homeId}:`, member);
     
-    if (!homeId || !member || !member.name || !member.email) {
-      return res.status(400).json({ 
-        message: 'Invalid request. Home ID, member name, and email are required' 
-      });
+    if (!homeId || !member || !member.email) {
+      return res.status(400).json({ message: 'Home ID and member email are required' });
     }
     
     if (global.useMockData) {
-      console.log('Using mock data for adding member to home');
+      console.log('Using mock data for adding member');
       return res.status(200).json({ 
-        success: true,
         message: 'Member added successfully',
         member: {
-          ...member,
-          addedAt: new Date()
+          userId: 'mock-new-user',
+          name: member.name || 'New Mock User',
+          email: member.email
         }
       });
     }
     
-    // Find the home
-    const home = await Home.findOne({ homeId });
-    
-    if (!home) {
-      return res.status(404).json({ message: 'Home not found' });
-    }
-    
-    // Check if user is a member of the home (optional security check)
-    const requestingUserIsMember = home.members.some(m => m.uid === userId);
-    
-    if (!requestingUserIsMember) {
-      return res.status(403).json({ 
-        message: 'You must be a member of the home to add other members' 
-      });
-    }
-    
-    // Check if the email is already registered
-    const existingMember = home.members.find(m => m.email === member.email);
-    
-    if (existingMember) {
-      return res.status(400).json({ 
-        message: 'A member with this email already exists in this home' 
-      });
-    }
-    
-    // Check if there's a user with this email
-    const existingUser = await User.findOne({ email: member.email });
-    
-    if (existingUser) {
-      // If user exists, add the home to their homes list
-      const memberData = {
-        name: member.name,
-        email: member.email,
-        uid: existingUser.uid
-      };
+    try {
+      // Find home by homeId (string) field, not by _id (ObjectId)
+      const home = await Home.findOne({ homeId: homeId });
       
-      // Add member to home
-      home.members.push(memberData);
-      await home.save();
-      
-      // Add home to user's homes array if not already there
-      if (!existingUser.homes.includes(home._id)) {
-        existingUser.homes.push(home._id);
-        await existingUser.save();
+      if (!home) {
+        return res.status(404).json({ message: 'Home not found' });
       }
       
-      return res.status(200).json({
-        success: true,
-        message: 'Member added successfully',
-        member: memberData
-      });
-    } else {
-      // If user doesn't exist yet, just add them to the home
-      // They'll be properly connected when they sign up
-      const memberData = {
-        name: member.name,
-        email: member.email,
-        // No UID yet, will be linked when user registers
-        invitedBy: userId,
-        invitedAt: new Date()
-      };
+      // Check if user is the creator of the home
+      if (home.createdBy !== userId) {
+        return res.status(403).json({ message: 'Only the home creator can add members' });
+      }
       
-      // Add member to home
-      home.members.push(memberData);
+      // Find the user by email
+      const targetUser = await User.findOne({ email: member.email });
+      
+      if (!targetUser) {
+        return res.status(404).json({ message: 'User not found. They need to sign up first.' });
+      }
+      
+      // Check if user is already a member
+      const isAlreadyMember = home.members.some(m => m.uid === targetUser.uid);
+      
+      if (isAlreadyMember) {
+        return res.status(400).json({ message: 'User is already a member of this home' });
+      }
+      
+      // Add user to home members
+      home.members.push({
+        name: member.name || targetUser.name,
+        email: targetUser.email,
+        uid: targetUser.uid
+      });
+      
       await home.save();
       
-      return res.status(200).json({
-        success: true,
-        message: 'Member invited successfully',
-        member: memberData
+      // Add home to user's homes (use home._id which is an ObjectId)
+      if (!targetUser.homes.includes(home._id)) {
+        targetUser.homes.push(home._id);
+        await targetUser.save();
+      }
+      
+      res.status(200).json({ 
+        message: 'Member added successfully',
+        member: {
+          userId: targetUser.uid,
+          name: member.name || targetUser.name,
+          email: targetUser.email
+        }
       });
+    } catch (dbError) {
+      console.error('Database error adding member:', dbError);
+      
+      if (process.env.NODE_ENV === 'development') {
+        // Return mock success in development mode
+        console.log('DEV MODE: Returning mock success due to database error');
+        return res.status(200).json({ 
+          message: 'Member added successfully (mock)',
+          member: {
+            userId: 'mock-new-user-' + Date.now(),
+            name: member.name || 'New Mock User',
+            email: member.email
+          }
+        });
+      }
+      
+      throw dbError;
     }
   } catch (error) {
-    console.error('Add home member error:', error);
+    console.error('Add member error:', error);
     res.status(500).json({ 
-      message: 'Server error adding member', 
+      message: 'Error adding member', 
+      details: error.message 
+    });
+  }
+});
+
+// Remove member from home
+router.post('/remove-member', verifyToken, async (req, res) => {
+  try {
+    const { homeId, memberId } = req.body;
+    const userId = req.user.uid;
+    
+    console.log(`User ${userId} removing member ${memberId} from home ${homeId}`);
+    
+    if (!homeId || !memberId) {
+      return res.status(400).json({ message: 'Home ID and member ID are required' });
+    }
+    
+    if (global.useMockData) {
+      console.log('Using mock data for removing member');
+      return res.status(200).json({ message: 'Member removed successfully' });
+    }
+    
+    try {
+      // Find home by homeId (string) field, not by _id (ObjectId)
+      const home = await Home.findOne({ homeId: homeId });
+      
+      if (!home) {
+        return res.status(404).json({ message: 'Home not found' });
+      }
+      
+      // Check if user is the creator of the home
+      if (home.createdBy !== userId) {
+        return res.status(403).json({ message: 'Only the home creator can remove members' });
+      }
+      
+      // Check if trying to remove the creator
+      if (memberId === home.createdBy) {
+        return res.status(400).json({ message: 'Cannot remove the home creator' });
+      }
+      
+      // Find the member in the home
+      const memberIndex = home.members.findIndex(m => m.uid === memberId);
+      
+      if (memberIndex === -1) {
+        return res.status(404).json({ message: 'Member not found in this home' });
+      }
+      
+      // Remove member from home
+      home.members.splice(memberIndex, 1);
+      await home.save();
+      
+      // Remove home from user's homes list
+      await User.updateOne(
+        { uid: memberId },
+        { $pull: { homes: home._id } }
+      );
+      
+      res.status(200).json({ message: 'Member removed successfully' });
+    } catch (dbError) {
+      console.error('Database error removing member:', dbError);
+      
+      if (process.env.NODE_ENV === 'development') {
+        // Return mock success in development mode
+        console.log('DEV MODE: Returning mock success due to database error');
+        return res.status(200).json({ message: 'Member removed successfully (mock)' });
+      }
+      
+      throw dbError;
+    }
+  } catch (error) {
+    console.error('Remove member error:', error);
+    res.status(500).json({ 
+      message: 'Error removing member', 
       details: error.message 
     });
   }

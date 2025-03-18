@@ -88,140 +88,143 @@ function setupFormSubmissions() {
     // Create Home form submission
     const createHomeForm = document.getElementById('create-home');
     
-    createHomeForm.addEventListener('submit', function(e) {
+    createHomeForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        // Get form data
-        const homeName = document.getElementById('home-name').value;
+        const homeNameInput = document.getElementById('home-name');
+        const homeName = homeNameInput.value.trim();
         
-        // Get members data
-        const members = [];
-        const memberInputs = document.querySelectorAll('.member-inputs');
+        if (!homeName) {
+            showAlert('Please enter a home name', 'error');
+            return;
+        }
         
-        memberInputs.forEach((memberInput, index) => {
-            const nameInput = document.getElementById(`member-name-${index + 1}`);
-            const emailInput = document.getElementById(`member-email-${index + 1}`);
-            
-            if (nameInput && emailInput && nameInput.value && emailInput.value) {
-                members.push({
-                    name: nameInput.value,
-                    email: emailInput.value
-                });
-            }
-        });
-        
-        // Show loading state
+        // Disable the submit button to prevent multiple submissions
         const submitBtn = createHomeForm.querySelector('button[type="submit"]');
-        const originalText = submitBtn.textContent;
-        submitBtn.textContent = 'Creating...';
+        const originalBtnText = submitBtn.innerHTML;
         submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
         
-        // Get current user token
-        firebase.auth().currentUser.getIdToken()
-            .then(token => {
-                // Create home in backend
-                return fetch('/api/homes', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        name: homeName,
-                        members: members
-                    })
-                });
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to create home');
+        try {
+            // Get the current user token
+            const token = await firebase.auth().currentUser.getIdToken();
+            
+            // Collect member data
+            const members = [];
+            const memberInputs = document.querySelectorAll('[id^="member-name-"]');
+            memberInputs.forEach(input => {
+                const index = input.id.split('-').pop();
+                const nameInput = document.getElementById(`member-name-${index}`);
+                const emailInput = document.getElementById(`member-email-${index}`);
+                
+                const name = nameInput.value.trim();
+                const email = emailInput.value.trim();
+                
+                if (name && email) {
+                    members.push({ name, email });
                 }
-                return response.json();
-            })
-            .then(data => {
-                // Store home ID and redirect to dashboard
-                localStorage.setItem('currentHomeId', data.home.homeId);
-                
-                // Show success message
-                showAlert(`Home "${homeName}" created successfully! Your Home ID is: ${data.home.homeId}`, 'success');
-                
-                // Redirect after a short delay
-                setTimeout(() => {
-                    window.location.href = '/dashboard.html';
-                }, 2000);
-            })
-            .catch(error => {
-                console.error('Create home error:', error);
-                showAlert('Failed to create home. Please try again.', 'error');
-                
-                // Reset button
-                submitBtn.textContent = originalText;
-                submitBtn.disabled = false;
             });
+            
+            // Send the request to create a home
+            const response = await fetch('/api/homes/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    name: homeName,
+                    members: members
+                })
+            });
+            
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || 'Failed to create home');
+            }
+            
+            // Get the response data
+            const data = await response.json();
+            
+            showAlert('Home created successfully!', 'success');
+            
+            // Store home ID and redirect to home page
+            localStorage.setItem('currentHomeId', data.homeId);
+            
+            // Redirect to select-home page instead of dashboard
+            setTimeout(() => {
+                window.location.href = 'select-home.html';
+            }, 1500);
+            
+        } catch (error) {
+            console.error('Error creating home:', error);
+            showAlert(error.message || 'Failed to create home', 'error');
+            
+            // Re-enable the submit button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
     });
     
     // Join Home form submission
     const joinHomeForm = document.getElementById('join-home');
     
-    joinHomeForm.addEventListener('submit', function(e) {
+    joinHomeForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        // Get form data
-        const homeId = document.getElementById('home-id').value;
+        const homeIdInput = document.getElementById('home-id');
+        const homeId = homeIdInput.value.trim();
         
-        // Show loading state
+        if (!homeId) {
+            showAlert('Please enter a home ID', 'error');
+            return;
+        }
+        
+        // Disable the submit button to prevent multiple submissions
         const submitBtn = joinHomeForm.querySelector('button[type="submit"]');
-        const originalText = submitBtn.textContent;
-        submitBtn.textContent = 'Joining...';
+        const originalBtnText = submitBtn.innerHTML;
         submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Joining...';
         
-        // Get current user token
-        firebase.auth().currentUser.getIdToken()
-            .then(token => {
-                // Join home in backend
-                return fetch('/api/homes/join', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        homeId: homeId
-                    })
-                });
-            })
-            .then(response => {
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        throw new Error('Home not found');
-                    } else if (response.status === 400) {
-                        throw new Error('You are already a member of this home');
-                    } else {
-                        throw new Error('Failed to join home');
-                    }
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Store home ID and redirect to dashboard
-                localStorage.setItem('currentHomeId', data.home.homeId);
-                
-                // Show success message
-                showAlert(`Successfully joined home "${data.home.name}"!`, 'success');
-                
-                // Redirect after a short delay
-                setTimeout(() => {
-                    window.location.href = '/dashboard.html';
-                }, 2000);
-            })
-            .catch(error => {
-                console.error('Join home error:', error);
-                showAlert(error.message || 'Failed to join home. Please try again.', 'error');
-                
-                // Reset button
-                submitBtn.textContent = originalText;
-                submitBtn.disabled = false;
+        try {
+            // Get the current user token
+            const token = await firebase.auth().currentUser.getIdToken();
+            
+            // Send the request to join a home
+            const response = await fetch('/api/homes/join', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    homeId: homeId
+                })
             });
+            
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || 'Failed to join home');
+            }
+            
+            showAlert('Successfully joined the home!', 'success');
+            
+            // Store home ID and redirect
+            localStorage.setItem('currentHomeId', homeId);
+            
+            // Redirect to select-home page instead of dashboard
+            setTimeout(() => {
+                window.location.href = 'select-home.html';
+            }, 1500);
+            
+        } catch (error) {
+            console.error('Error joining home:', error);
+            showAlert(error.message || 'Failed to join home', 'error');
+            
+            // Re-enable the submit button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
     });
 }
 

@@ -709,9 +709,11 @@ footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px;
-    border-bottom: 1px solid #eee;
-    transition: background-color 0.2s;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .home-item:last-child {
@@ -860,4 +862,121 @@ footer {
     font-size: 12px;
     padding: 2px 8px;
     border-radius: 12px;
+}
+
+/* Home Selection Page */
+.home-info h3 {
+    margin: 0;
+    color: #333;
+}
+
+.home-info p {
+    margin: 0.5rem 0 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.home-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Home Management Page */
+.members-section,
+.add-member-section {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #eee;
+}
+
+.member-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.member-info h4 {
+    margin: 0;
+    color: #333;
+}
+
+.member-info p {
+    margin: 0.5rem 0 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background-color: #e3f2fd;
+    color: #1976d2;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+/* Notifications */
+.notification {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    padding: 1rem;
+    border-radius: 4px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out;
+}
+
+.notification.success {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.notification.error {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.notification.info {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .home-item,
+    .member-item {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .home-actions {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .notification {
+        left: 1rem;
+        right: 1rem;
+        text-align: center;
+    }
 }

@@ -32,7 +32,38 @@ function setupEventListeners() {
     const signupForm = document.getElementById('signup-form');
     
     if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            if (!email || !password) {
+                showAlert('Please enter both email and password', 'error');
+                return;
+            }
+            
+            try {
+                const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+                showAlert('Login successful!', 'success');
+                
+                // Redirect to select-home page instead of dashboard
+                setTimeout(() => {
+                    window.location.href = 'select-home.html';
+                }, 1000);
+            } catch (error) {
+                console.error('Login error:', error);
+                
+                let errorMessage = 'Login failed';
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    errorMessage = 'Invalid email or password';
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = 'Too many unsuccessful login attempts. Please try again later';
+                }
+                
+                showAlert(errorMessage, 'error');
+            }
+        });
     }
 
     if (signupForm) {
@@ -94,45 +125,6 @@ function showModal(modal) {
 
 function hideModal(modal) {
     if (modal) modal.style.display = 'none';
-}
-
-// Handle login form submission
-async function handleLogin(e) {
-    e.preventDefault();
-    
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    
-    if (!email || !password) {
-        showAlert('Please enter both email and password', 'error');
-        return;
-    }
-    
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'Logging in...';
-    submitBtn.disabled = true;
-    
-    try {
-        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-        const token = await userCredential.user.getIdToken();
-        localStorage.setItem('token', token);
-        
-        hideModal(loginModal);
-        showAlert('Login successful!', 'success');
-        
-        await checkUserHome(email);
-    } catch (error) {
-        console.error('Login Error:', error);
-        let errorMessage = 'Login failed. Please check your credentials.';
-        if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-            errorMessage = 'Invalid email or password. Please try again.';
-        }
-        showAlert(errorMessage, 'error');
-    } finally {
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
-    }
 }
 
 // Handle signup form submission
