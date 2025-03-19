@@ -16,11 +16,18 @@ const verifyToken = async (req, res, next) => {
       // Verify the token with Firebase
       const decodedToken = await admin.auth().verifyIdToken(token);
       console.log('Token verified successfully for user:', decodedToken.email || decodedToken.uid);
+      
+      // Ensure we have valid user data in the token
+      if (!decodedToken.uid) {
+        console.error('Token is missing user ID');
+        return res.status(401).json({ message: 'Invalid token - missing user ID' });
+      }
+      
       req.user = decodedToken;
       next();
     } catch (firebaseError) {
       console.error('Firebase token verification failed:', firebaseError.message);
-      return res.status(401).json({ message: 'Invalid token' });
+      return res.status(401).json({ message: 'Invalid token: ' + firebaseError.message });
     }
   } catch (error) {
     console.error('Token verification error:', error);

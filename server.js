@@ -12,8 +12,38 @@ const PORT = process.env.PORT || 3002;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ 
+  limit: '10mb',
+  verify: (req, res, buf) => {
+    try {
+      JSON.parse(buf);
+    } catch (e) {
+      console.error('Invalid JSON in request body:', e.message);
+      res.status(400).json({ message: 'Invalid JSON in request body' });
+      throw new Error('Invalid JSON');
+    }
+  }
+}));
 app.use(express.static('public'));
+
+// Custom middleware to ensure all API responses are valid JSON
+app.use('/api', (req, res, next) => {
+  const originalJson = res.json;
+  res.json = function(data) {
+    try {
+      // Test if data is valid JSON
+      JSON.stringify(data);
+      return originalJson.call(this, data);
+    } catch (e) {
+      console.error('Invalid JSON response:', e.message);
+      return originalJson.call(this, { 
+        message: 'Server error: Invalid JSON response', 
+        error: e.message 
+      });
+    }
+  };
+  next();
+});
 
 // Configure mock data usage for development
 global.useMockData = false; // Set to false to use real database data
@@ -66,6 +96,30 @@ const startServer = () => {
 
   app.get('/view-expenses', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'view-expenses.html'));
+  });
+
+  // Add routes for home management
+  app.get('/home', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'create-join-home.html'));
+  });
+
+  app.get('/select-home', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'select-home.html'));
+  });
+
+  app.get('/manage-home', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'manage-home.html'));
+  });
+
+  // Error handling for API routes
+  app.use('/api/*', (err, req, res, next) => {
+    console.error('API Error:', err);
+    res.status(500).json({ message: 'Server error', details: err.message });
+  });
+
+  // Catch-all route for client-side routing
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
   });
 
   // Start the server with a simple approach

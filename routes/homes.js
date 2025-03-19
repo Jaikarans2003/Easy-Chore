@@ -35,10 +35,10 @@ const handleDbOperation = async (operation, mockResponse) => {
 };
 
 // Create a new home
-router.post('/', verifyToken, async (req, res) => {
+router.post('/create', verifyToken, async (req, res) => {
   try {
     console.log('Creating new home with data:', req.body);
-    const { name } = req.body;
+    const { name, members = [] } = req.body;
     
     if (!name) {
       return res.status(400).json({ message: 'Home name is required' });
@@ -62,13 +62,16 @@ router.post('/', verifyToken, async (req, res) => {
         updatedAt: new Date()
       };
       
-      return res.status(201).json({ home: mockHomeWithName });
+      return res.status(201).json({ 
+        home: mockHomeWithName,
+        homeId: mockHomeWithName.homeId
+      });
     }
     
     // Otherwise, try to create a real home in the database
     try {
       // Try to find user in database
-      const user = await User.findOne({ uid: userId });
+      let user = await User.findOne({ uid: userId });
       console.log('Found user:', user ? 'Yes' : 'No');
       
       if (!user) {
@@ -78,37 +81,15 @@ router.post('/', verifyToken, async (req, res) => {
         const newUser = new User({
           uid: userId,
           name: req.user.name || 'New User',
-          email: req.user.email || `user-${userId}@example.com`,
+          email: req.user.email || '',
           homes: []
         });
         
         await newUser.save();
-        console.log('Created user automatically:', newUser._id);
+        console.log('New user created with ID:', newUser._id);
         
-        // Create new home in database
-        console.log('Creating home in database');
-        const newHome = new Home({
-          name,
-          homeId,
-          members: [
-            {
-              name: newUser.name,
-              email: newUser.email,
-              uid: userId
-            }
-          ],
-          createdBy: userId
-        });
-        
-        await newHome.save();
-        console.log('Home saved to database:', newHome._id);
-        
-        // Add home to user's homes array
-        newUser.homes.push(newHome._id);
-        await newUser.save();
-        console.log('Home added to user');
-        
-        return res.status(201).json({ home: newHome });
+        // Use the newly created user
+        user = newUser;
       }
       
       // Create new home in database
@@ -126,45 +107,49 @@ router.post('/', verifyToken, async (req, res) => {
         createdBy: userId
       });
       
+      // Add additional members if provided
+      if (members && members.length > 0) {
+        console.log(`Adding ${members.length} additional members`);
+        members.forEach(member => {
+          // Don't add duplicates
+          if (member.email !== user.email) {
+            newHome.members.push({
+              name: member.name,
+              email: member.email,
+              uid: '' // Will be filled when they register
+            });
+          }
+        });
+      }
+      
       await newHome.save();
       console.log('Home saved to database:', newHome._id);
       
-      // Add home to user's homes array
-      user.homes.push(newHome._id);
-      await user.save();
-      console.log('Home added to user');
-      
-      return res.status(201).json({ home: newHome });
-    } catch (error) {
-      console.error('Error creating home in database:', error);
-      
-      // Try simulating a successful response to continue app flow
-      if (process.env.NODE_ENV === 'development') {
-        console.log('DEV MODE: Returning mock home despite database error');
-        const mockHomeWithName = { 
-          _id: 'mock-home-id-' + Date.now(),
-          name,
-          homeId,
-          members: [
-            {
-              name: req.user.name || 'Dev User',
-              email: req.user.email || 'dev@example.com',
-              uid: userId
-            }
-          ],
-          createdBy: userId,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        
-        return res.status(201).json({ home: mockHomeWithName });
+      // Add home to user's homes array if not already there
+      if (!user.homes.includes(newHome._id)) {
+        user.homes.push(newHome._id);
+        await user.save();
+        console.log('Home added to user');
       }
       
-      return res.status(500).json({ message: 'Error creating home', details: error.message });
+      return res.status(201).json({ 
+        home: newHome,
+        homeId: newHome.homeId
+      });
+      
+    } catch (dbError) {
+      console.error('Database error creating home:', dbError);
+      return res.status(500).json({ 
+        message: 'Error creating home in database', 
+        details: dbError.message 
+      });
     }
   } catch (error) {
     console.error('Create home error:', error);
-    return res.status(500).json({ message: 'Server error', details: error.message });
+    res.status(500).json({ 
+      message: 'Error creating home', 
+      details: error.message 
+    });
   }
 });
 
@@ -236,28 +221,44 @@ router.post('/join', verifyToken, async (req, res) => {
     
     if (global.useMockData) {
       console.log('Using mock data for joining home');
-      return res.status(200).json({ home: mockHome });
+      return res.status(200).json({ 
+        home: mockHome,
+        homeId: mockHome.homeId
+      });
     }
     
     // Find the home
     const home = await Home.findOne({ homeId });
     
     if (!home) {
-      return res.status(404).json({ message: 'Home not found' });
+      return res.status(404).json({ message: 'Home not found with the provided ID' });
     }
     
-    // Find the user
-    const user = await User.findOne({ uid: userId });
+    // Find the user or create if not found
+    let user = await User.findOne({ uid: userId });
     
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      console.log('User not found in database, creating user automatically');
+      // Create user automatically with available data
+      user = new User({
+        uid: userId,
+        name: req.user.name || 'New User',
+        email: req.user.email || '',
+        homes: []
+      });
+      await user.save();
+      console.log('Created new user for join:', user._id);
     }
     
     // Check if user is already a member
     const isMember = home.members.some(member => member.uid === userId);
     
     if (isMember) {
-      return res.status(400).json({ message: 'User is already a member of this home' });
+      return res.status(200).json({ 
+        message: 'You are already a member of this home',
+        home: home,
+        homeId: home.homeId 
+      });
     }
     
     // Add user to home members
@@ -269,14 +270,23 @@ router.post('/join', verifyToken, async (req, res) => {
     
     await home.save();
     
-    // Add home to user's homes
-    user.homes.push(home._id);
-    await user.save();
+    // Add home to user's homes if not already there
+    if (!user.homes.includes(home._id)) {
+      user.homes.push(home._id);
+      await user.save();
+    }
     
-    res.status(200).json({ home });
+    res.status(200).json({ 
+      home: home,
+      homeId: home.homeId
+    });
+    
   } catch (error) {
     console.error('Join home error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      message: 'Error joining home', 
+      details: error.message 
+    });
   }
 });
 

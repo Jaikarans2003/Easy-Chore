@@ -1,0 +1,58 @@
+/* Anti-glitch CSS - Fixes 5 second layout shifts */
+
+/* Prevent horizontal scrolling on all screens */
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden !important;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+/* Prevent layout shifts during page load */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #f5f7fa;
+  z-index: -1;
+}
+
+/* Smoother fading in for page content */
+.landing-page, .container, .dashboard {
+  opacity: 0;
+  animation: fadeIn 0.5s ease-in 0.2s forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Force uppercase in headers */
+h1, h2, h3 {
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+}
+
+/* Stable initial state for common containers */
+.landing-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.landing-content {
+  max-width: 1000px;
+  width: 90%;
+  margin: 0 auto;
+  padding: 20px;
+}
+

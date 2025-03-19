@@ -139,12 +139,30 @@ function setupFormSubmissions() {
             });
             
             if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.message || 'Failed to create home');
+                let errorMessage = 'Failed to create home';
+                try {
+                    const data = await response.json();
+                    errorMessage = data.message || errorMessage;
+                } catch (jsonError) {
+                    console.error('Error parsing error response:', jsonError);
+                    // Try to get the text response if JSON parsing fails
+                    const textResponse = await response.text();
+                    console.error('Error response text:', textResponse);
+                    if (textResponse.includes('<!DOCTYPE') || textResponse.includes('<html>')) {
+                        errorMessage = 'Server error. Please try again later.';
+                    }
+                }
+                throw new Error(errorMessage);
             }
             
             // Get the response data
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch (jsonError) {
+                console.error('Error parsing success response:', jsonError);
+                throw new Error('Invalid response from server');
+            }
             
             showAlert('Home created successfully!', 'success');
             
@@ -203,8 +221,29 @@ function setupFormSubmissions() {
             });
             
             if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.message || 'Failed to join home');
+                let errorMessage = 'Failed to join home';
+                try {
+                    const data = await response.json();
+                    errorMessage = data.message || errorMessage;
+                } catch (jsonError) {
+                    console.error('Error parsing error response:', jsonError);
+                    // Try to get the text response if JSON parsing fails
+                    const textResponse = await response.text();
+                    console.error('Error response text:', textResponse);
+                    if (textResponse.includes('<!DOCTYPE') || textResponse.includes('<html>')) {
+                        errorMessage = 'Server error. Please try again later.';
+                    }
+                }
+                throw new Error(errorMessage);
+            }
+            
+            let responseData;
+            try {
+                responseData = await response.json();
+                console.log('Join home response:', responseData);
+            } catch (jsonError) {
+                console.error('Error parsing success response:', jsonError);
+                // If we can't parse the JSON but the response was OK, we'll continue
             }
             
             showAlert('Successfully joined the home!', 'success');

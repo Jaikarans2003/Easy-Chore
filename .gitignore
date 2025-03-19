@@ -39,6 +39,8 @@ out/
 
 # Firebase configuration files
 firebase-admin-key.json
+*firebase-adminsdk*.json
+easy-chore-project-firebase-adminsdk-fbsvc-e43d9cf9f3.json
 
 # Uploaded files
 uploads/
