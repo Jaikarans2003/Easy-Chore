@@ -114,5 +114,40 @@ router.get('/user', verifyToken, async (req, res) => {
   }
 });
 
+// Update user's UPI ID
+router.put('/user/upi', verifyToken, async (req, res) => {
+  try {
+    const { upiId } = req.body;
+    console.log(`Updating UPI ID for user ${req.user.uid} to: ${upiId}`);
+    
+    if (!upiId) {
+      return res.status(400).json({ message: 'UPI ID is required' });
+    }
+    
+    // Validate UPI ID format (basic validation)
+    const upiRegex = /^[\w\.\-]+@[\w\.\-]+$/;
+    if (!upiRegex.test(upiId)) {
+      return res.status(400).json({ message: 'Invalid UPI ID format' });
+    }
+    
+    // Find and update the user
+    const user = await User.findOneAndUpdate(
+      { uid: req.user.uid },
+      { upiId: upiId },
+      { new: true }
+    );
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    console.log('UPI ID updated successfully for user:', user.uid);
+    res.status(200).json({ user });
+  } catch (error) {
+    console.error('Update UPI ID error:', error);
+    res.status(500).json({ message: 'Server error', details: error.message });
+  }
+});
+
 // Export both the router and verifyToken middleware
 module.exports = { router, verifyToken };

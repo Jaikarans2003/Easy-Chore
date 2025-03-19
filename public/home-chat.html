@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Chat - EASY CHORE</title>
+    <link rel="stylesheet" href="css/anti-glitch.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Chat specific styles */
+        .chat-container {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 220px);
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: #4C82E6;
+            color: white;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .chat-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .online-indicator {
+            display: flex;
+            align-items: center;
+        }
+        
+        .online-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #4CD964;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .message {
+            max-width: 70%;
+            margin-bottom: 10px;
+            padding: 10px 15px;
+            border-radius: 18px;
+            position: relative;
+        }
+        
+        .message-sender {
+            font-size: 12px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .message-time {
+            font-size: 10px;
+            color: #777;
+            text-align: right;
+            margin-top: 5px;
+        }
+        
+        .message-received {
+            align-self: flex-start;
+            background-color: #E5E5EA;
+            color: #000;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .message-sent {
+            align-self: flex-end;
+            background-color: #4C82E6;
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+        
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            background-color: white;
+            border-top: 1px solid #E5E5EA;
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+        }
+        
+        .chat-input button {
+            margin-left: 10px;
+            padding: 10px 15px;
+            border: none;
+            background-color: #4C82E6;
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .loading-indicator {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: #777;
+        }
+
+        .message-content {
+            word-break: break-word;
+        }
+
+        .no-messages {
+            text-align: center;
+            padding: 30px;
+            color: #777;
+            font-style: italic;
+        }
+
+        .load-more {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+
+        .load-more button {
+            padding: 5px 15px;
+            border: none;
+            background-color: #E5E5EA;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .chat-container {
+                height: calc(100vh - 180px);
+                margin: 10px;
+            }
+            
+            .message {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>EASY CHORE</h1>
+                <div class="current-home">
+                    Current Home: <span id="current-home-name">Loading...</span>
+                    <span id="home-id" class="home-id"></span>
+                </div>
+            </div>
+            <nav>
+                <a href="dashboard.html" class="btn secondary-btn">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <button id="logout-btn" class="btn secondary-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </nav>
+        </header>
+
+        <main>
+            <div class="card">
+                <div class="card-header">
+                    <h2>Home Chat</h2>
+                </div>
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <div class="chat-title" id="chat-title">Loading...</div>
+                        <div class="online-indicator">
+                            <div class="online-dot"></div>
+                            <span>Online</span>
+                        </div>
+                    </div>
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="loading-indicator">Loading messages...</div>
+                    </div>
+                    <div class="chat-input">
+                        <input type="text" id="message-input" placeholder="Type a message..." />
+                        <button id="send-button">
+                            <i class="fas fa-paper-plane"></i> Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Easy Chore. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Firebase Auth
+            const auth = firebase.auth();
+            let currentUser = null;
+            let currentHomeId = null;
+            let currentHomeName = null;
+            let currentPage = 1;
+            let totalPages = 0;
+            let isLoadingMessages = false;
+            let socket = null;
+
+            // DOM Elements
+            const chatMessages = document.getElementById('chat-messages');
+            const messageInput = document.getElementById('message-input');
+            const sendButton = document.getElementById('send-button');
+            const chatTitle = document.getElementById('chat-title');
+            const currentHomeNameEl = document.getElementById('current-home-name');
+            const homeIdEl = document.getElementById('home-id');
+            const logoutBtn = document.getElementById('logout-btn');
+
+            // Check auth state
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentUser = user;
+                    await initializeChat();
+                } else {
+                    window.location.href = 'index.html';
+                }
+            });
+
+            // Initialize Socket.io
+            function initializeSocket() {
+                if (socket) {
+                    console.log('Disconnecting existing socket...');
+                    socket.disconnect();
+                }
+                
+                console.log('Initializing socket connection...');
+                socket = io();
+                
+                socket.on('connect', () => {
+                    console.log('Connected to Socket.io server with ID:', socket.id);
+                    if (currentHomeId) {
+                        console.log('Joining room for homeId:', currentHomeId);
+                        socket.emit('join-room', currentHomeId);
+                    }
+                });
+                
+                socket.on('connect_error', (error) => {
+                    console.error('Socket.io connection error:', error);
+                });
+                
+                socket.on('room-joined', (data) => {
+                    console.log('Successfully joined room:', data);
+                });
+                
+                socket.on('new-message', (message) => {
+                    console.log('Received new message via socket:', message);
+                    if (message && message.homeId === currentHomeId) {
+                        appendMessage(message);
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    } else {
+                        console.warn('Received message for different home or invalid message:', message);
+                    }
+                });
+                
+                socket.on('message-deleted', (data) => {
+                    console.log('Message was deleted:', data);
+                    if (data && data.messageId) {
+                        const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
+                        if (messageElement) {
+                            messageElement.classList.add('deleted');
+                            messageElement.querySelector('.message-content').innerHTML = '<em>This message was deleted</em>';
+                        }
+                    }
+                });
+                
+                socket.on('disconnect', () => {
+                    console.log('Disconnected from Socket.io server');
+                });
+            }
+
+            // Initialize chat
+            async function initializeChat() {
+                try {
+                    // Get current selected home from localStorage
+                    const selectedHome = localStorage.getItem('selectedHome');
+                    console.log('Selected home from localStorage:', selectedHome);
+                    
+                    // Check for homeId in multiple places
+                    let homeId, homeName;
+                    
+                    // First check URL parameters for homeId (highest priority)
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const urlHomeId = urlParams.get('homeId');
+                    if (urlHomeId) {
+                        homeId = urlHomeId;
+                        homeName = 'My Home';
+                        console.log('Got homeId from URL parameter:', homeId);
+                    }
+                    
+                    // If not in URL, check localStorage
+                    if (!homeId && selectedHome) {
+                        try {
+                            const homeData = JSON.parse(selectedHome);
+                            homeId = homeData.homeId;
+                            homeName = homeData.name;
+                            console.log('Got homeId from selectedHome:', homeId);
+                        } catch (parseError) {
+                            console.error('Error parsing selectedHome JSON:', parseError);
+                        }
+                    }
+                    
+                    // If not found in selectedHome, try currentHomeId
+                    if (!homeId) {
+                        homeId = localStorage.getItem('currentHomeId');
+                        homeName = 'My Home';
+                        console.log('Got homeId from currentHomeId:', homeId);
+                    }
+                    
+                    // If still no homeId, show error and redirect
+                    if (!homeId) {
+                        console.error('No home ID found in localStorage');
+                        chatMessages.innerHTML = '<div class="error">No home selected. Please select a home first.</div>';
+                        // Redirect to select-home.html after showing error
+                        setTimeout(() => {
+                            window.location.href = 'select-home.html';
+                        }, 2000); // Show error message for 2 seconds before redirecting
+                        return;
+                    }
+                    
+                    // Set current home data
+                    currentHomeId = homeId;
+                    currentHomeName = homeName || 'My Home';
+                    
+                    console.log('Initialized chat for home:', currentHomeName, 'with ID:', currentHomeId);
+                    
+                    // Update UI elements
+                    chatTitle.textContent = `${currentHomeName} Chat`;
+                    currentHomeNameEl.textContent = currentHomeName;
+                    if (homeIdEl) {
+                        homeIdEl.textContent = `(${currentHomeId})`;
+                    }
+                    
+                    // Store home data in localStorage in case it was missing or from URL
+                    const homeData = {
+                        homeId: currentHomeId,
+                        name: currentHomeName
+                    };
+                    console.log('Saving home data to localStorage:', homeData);
+                    localStorage.setItem('selectedHome', JSON.stringify(homeData));
+                    localStorage.setItem('currentHomeId', currentHomeId);
+                    
+                    // Initialize Socket.io
+                    initializeSocket();
+                    
+                    // Load initial messages
+                    await loadMessages();
+                    
+                    // Add event listeners
+                    setupEventListeners();
+                } catch (error) {
+                    console.error('Error initializing chat:', error);
+                    chatMessages.innerHTML = `<div class="error">Error loading chat: ${error.message}</div>`;
+                }
+            }
+
+            // Load messages from API
+            async function loadMessages(page = 1) {
+                if (isLoadingMessages) return;
+                
+                isLoadingMessages = true;
+                chatMessages.innerHTML = '<div class="loading-indicator">Loading messages...</div>';
+                
+                try {
+                    console.log('Getting Firebase token...');
+                    const idToken = await currentUser.getIdToken();
+                    console.log('Token received, calling API for homeId:', currentHomeId);
+                    
+                    const response = await fetch(`/api/messages/home/${currentHomeId}?page=${page}`, {
+                        headers: {
+                            'Authorization': `Bearer ${idToken}`
+                        }
+                    });
+                    
+                    console.log('API response status:', response.status);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('API error response:', errorText);
+                        throw new Error(`Failed to load messages: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('Messages loaded:', data);
+                    
+                    // Update pagination info
+                    currentPage = data.currentPage || 1;
+                    totalPages = data.totalPages || 0;
+                    
+                    // Clear messages and load new ones
+                    chatMessages.innerHTML = '';
+                    
+                    // Add load more button if needed
+                    if (currentPage < totalPages) {
+                        const loadMoreDiv = document.createElement('div');
+                        loadMoreDiv.className = 'load-more';
+                        loadMoreDiv.innerHTML = `<button id="load-more-btn">Load earlier messages</button>`;
+                        chatMessages.appendChild(loadMoreDiv);
+                        
+                        document.getElementById('load-more-btn').addEventListener('click', () => {
+                            loadMessages(currentPage + 1);
+                        });
+                    }
+                    
+                    // Display messages
+                    if (data.messages && data.messages.length > 0) {
+                        data.messages.forEach(message => {
+                            appendMessage(message);
+                        });
+                    } else {
+                        chatMessages.innerHTML = '<div class="no-messages">No messages yet. Start the conversation!</div>';
+                    }
+                    
+                    // Scroll to bottom
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    
+                } catch (error) {
+                    console.error('Error loading messages:', error);
+                    chatMessages.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                } finally {
+                    isLoadingMessages = false;
+                }
+            }
+
+            // Append a message to the chat
+            function appendMessage(message) {
+                // Safety check for valid message
+                if (!message || !message.content) {
+                    console.error('Invalid message object:', message);
+                    return;
+                }
+                
+                const messageDiv = document.createElement('div');
+                const isSentByCurrentUser = message.senderId === currentUser.uid;
+                
+                // Set classes and data attributes
+                messageDiv.className = `message ${isSentByCurrentUser ? 'message-sent' : 'message-received'}`;
+                messageDiv.setAttribute('data-message-id', message._id || '');
+                
+                // Format timestamp
+                const timestamp = new Date(message.createdAt || Date.now());
+                const timeStr = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                messageDiv.innerHTML = `
+                    ${!isSentByCurrentUser ? `<div class="message-sender">${message.senderName || 'Unknown User'}</div>` : ''}
+                    <div class="message-content">${message.content}</div>
+                    <div class="message-time">${timeStr}</div>
+                `;
+                
+                // Remove "no messages" message if it exists
+                const noMessagesDiv = document.querySelector('.no-messages');
+                if (noMessagesDiv) {
+                    noMessagesDiv.remove();
+                }
+                
+                chatMessages.appendChild(messageDiv);
+            }
+
+            // Send a message
+            async function sendMessage() {
+                const messageText = messageInput.value.trim();
+                if (!messageText) return;
+                
+                try {
+                    // Double check we have a valid homeId
+                    if (!currentHomeId) {
+                        // Try to get it from localStorage if it's missing
+                        currentHomeId = localStorage.getItem('currentHomeId');
+                        
+                        // If still missing, show error and stop
+                        if (!currentHomeId) {
+                            console.error('CRITICAL ERROR: No homeId available for sending message');
+                            alert('Error: No home selected. Please return to the dashboard and select a home.');
+                            window.location.href = 'dashboard.html';
+                            return;
+                        }
+                    }
+                    
+                    console.log('Sending message:', messageText, 'to homeId:', currentHomeId);
+                    const idToken = await currentUser.getIdToken();
+                    
+                    const payload = {
+                        homeId: currentHomeId,
+                        content: messageText,
+                        messageType: 'text'
+                    };
+                    console.log('Message payload:', JSON.stringify(payload));
+                    
+                    const response = await fetch('/api/messages', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${idToken}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    console.log('Send message response status:', response.status);
+                    
+                    if (!response.ok) {
+                        const errorData = await response.text();
+                        console.error('API error response for send:', errorData);
+                        throw new Error(`Failed to send message: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    // Clear input
+                    messageInput.value = '';
+                    console.log('Message sent successfully');
+                    
+                } catch (error) {
+                    console.error('Error sending message:', error);
+                    alert(`Error sending message: ${error.message}`);
+                }
+            }
+
+            // Setup event listeners
+            function setupEventListeners() {
+                // Send message on button click
+                sendButton.addEventListener('click', sendMessage);
+                
+                // Send message on Enter key
+                messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        sendMessage();
+                    }
+                });
+                
+                // Logout
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    auth.signOut()
+                        .then(() => {
+                            localStorage.removeItem('selectedHome');
+                            window.location.href = 'index.html';
+                        })
+                        .catch(error => {
+                            console.error('Error signing out:', error);
+                        });
+                });
+            }
+        });
+    </script>
+</body>
+</html> 

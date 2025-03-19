@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Easy Chore</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Dashboard - EASY CHORE</title>
+    <link rel="stylesheet" href="css/anti-glitch.css">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -11,7 +13,7 @@
     <div class="container">
         <header>
             <div class="header-content">
-                <h1>Easy Chore</h1>
+                <h1>EASY CHORE</h1>
                 <div class="current-home">
                     Current Home: <span id="current-home-name">Loading...</span>
                     <span id="home-id" class="home-id"></span>
@@ -54,6 +56,18 @@
                     <h3>View Expenses</h3>
                     <p>Track all expenses and payments</p>
                 </div>
+                
+                <div class="dashboard-card" onclick="navigateToChat()">
+                    <i class="fas fa-comments dashboard-icon"></i>
+                    <h3>Home Chat</h3>
+                    <p>Chat with your home members</p>
+                </div>
+                
+                <div class="dashboard-card" onclick="window.location.href='manage-home.html'">
+                    <i class="fas fa-home dashboard-icon"></i>
+                    <h3>Manage Home</h3>
+                    <p>Manage your home settings</p>
+                </div>
             </div>
 
             <div class="card">
@@ -79,5 +93,31 @@
     <!-- App Scripts -->
     <script src="js/auth.js"></script>
     <script src="js/dashboard.js"></script>
+
+    <script>
+    function navigateToChat() {
+        // Get current home data
+        const currentHomeId = localStorage.getItem('currentHomeId');
+        const homeName = document.getElementById('current-home-name').textContent || 'My Home';
+        
+        if (!currentHomeId) {
+            alert('No home selected. Please select a home first.');
+            window.location.href = 'select-home.html';
+            return;
+        }
+        
+        // Always set the selectedHome with the most current data
+        const homeData = {
+            homeId: currentHomeId,
+            name: homeName
+        };
+        console.log('Setting home data for chat:', homeData);
+        localStorage.setItem('selectedHome', JSON.stringify(homeData));
+        localStorage.setItem('currentHomeId', currentHomeId);
+        
+        // Navigate to chat page with homeId parameter for extra safety
+        window.location.href = `home-chat.html?homeId=${currentHomeId}`;
+    }
+    </script>
 </body>
 </html>

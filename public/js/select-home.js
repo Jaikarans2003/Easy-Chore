@@ -111,11 +111,40 @@ function createHomeElement(home) {
 // Enter a home
 function enterHome(homeId) {
     try {
-        // Store the selected home ID in localStorage
-        localStorage.setItem('currentHomeId', homeId);
-        
-        // Redirect to dashboard
-        window.location.href = 'dashboard.html';
+        // Find the current home data based on homeId
+        fetch(`/api/homes/${homeId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${auth.currentUser.getIdToken()}`
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Store complete home data in localStorage
+            const homeData = {
+                homeId: data.homeId || homeId,
+                name: data.name || 'Home',
+                members: data.members || []
+            };
+            
+            console.log('Storing home data in localStorage:', homeData);
+            localStorage.setItem('selectedHome', JSON.stringify(homeData));
+            localStorage.setItem('currentHomeId', homeId);
+            
+            // Redirect to dashboard
+            window.location.href = 'dashboard.html';
+        })
+        .catch(error => {
+            console.error('Error fetching home details:', error);
+            // Still set the homeId even if details fetch fails
+            localStorage.setItem('currentHomeId', homeId);
+            localStorage.setItem('selectedHome', JSON.stringify({
+                homeId: homeId,
+                name: 'My Home'
+            }));
+            window.location.href = 'dashboard.html';
+        });
     } catch (error) {
         console.error('Error entering home:', error);
         showNotification('Error entering home. Please try again.', 'error');

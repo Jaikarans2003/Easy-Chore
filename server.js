@@ -5,9 +5,19 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const http = require('http');
+const socketIo = require('socket.io');
 require('dotenv').config();
 
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: '*', // Allow all origins in development
+    methods: ['GET', 'POST']
+  }
+});
+
 const PORT = process.env.PORT || 3002;
 
 // Middleware
@@ -52,6 +62,38 @@ global.useMockData = false; // Set to false to use real database data
 console.log('Attempting to connect to MongoDB...');
 console.log('MongoDB connection string configured:', process.env.MONGODB_URI ? 'Yes' : 'No');
 
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log('New client connected:', socket.id);
+  
+  // Join a home's chat room
+  socket.on('join-room', (homeId) => {
+    console.log(`Socket ${socket.id} joining room: ${homeId}`);
+    socket.join(homeId);
+    // Send confirmation to client
+    socket.emit('room-joined', { homeId, status: 'success' });
+  });
+  
+  // Leave a home's chat room
+  socket.on('leave-room', (homeId) => {
+    console.log(`Socket ${socket.id} leaving room: ${homeId}`);
+    socket.leave(homeId);
+  });
+  
+  // Handle disconnection
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+  
+  // Handle errors
+  socket.on('error', (error) => {
+    console.error('Socket error:', error);
+  });
+});
+
+// Make io accessible to routes
+app.set('io', io);
+
 // Function to start the server
 const startServer = () => {
   // Import routes
@@ -60,13 +102,15 @@ const startServer = () => {
   const choresRouter = require('./routes/chores');
   const expensesRouter = require('./routes/expenses');
   const uploadsRouter = require('./routes/uploads');
-
+  const messagesRouter = require('./routes/messages');
+  
   // Routes
   app.use('/api/auth', authRouter);
   app.use('/api/homes', homesRouter);
   app.use('/api/chores', choresRouter);
   app.use('/api/expenses', expensesRouter);
   app.use('/api/uploads', uploadsRouter);
+  app.use('/api/messages', messagesRouter);
 
   // Serve HTML files
   app.get('/', (req, res) => {
@@ -98,6 +142,15 @@ const startServer = () => {
     res.sendFile(path.join(__dirname, 'public', 'view-expenses.html'));
   });
 
+  // Add home chat route - make this explicit and higher priority
+  app.get('/home-chat', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'home-chat.html'));
+  });
+  
+  app.get('/home-chat.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'home-chat.html'));
+  });
+
   // Add routes for home management
   app.get('/home', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'create-join-home.html'));
@@ -122,8 +175,8 @@ const startServer = () => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
   });
 
-  // Start the server with a simple approach
-  app.listen(PORT, () => {
+  // Start the server with Socket.io
+  server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Open http://localhost:${PORT} in your browser`);
     console.log(global.useMockData ? 'Using MOCK data (no MongoDB)' : 'Using real MongoDB data');

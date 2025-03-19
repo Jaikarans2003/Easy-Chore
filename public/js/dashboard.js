@@ -52,120 +52,150 @@ function setupLogoutButton() {
 // Load home data
 async function loadHomeData() {
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error('No token found, redirecting to login');
-            window.location.href = '/';
+        // Get home ID from localStorage
+        const homeId = localStorage.getItem('currentHomeId');
+        
+        if (!homeId) {
+            showAlert('No home selected. Please select a home.', 'error');
+            window.location.href = 'select-home.html';
             return;
         }
-
-        // First check if we have a currentHomeId in localStorage
-        const currentHomeId = localStorage.getItem('currentHomeId');
         
-        if (currentHomeId) {
-            console.log('Using stored homeId:', currentHomeId);
-            // Try to load specific home
-            try {
-                const homeResponse = await fetch(`/api/homes/${currentHomeId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (homeResponse.ok) {
-                    const homeData = await homeResponse.json();
-                    console.log('Home data loaded successfully:', homeData);
-                    displayHomeInfo(homeData.home);
-                    displayMembers(homeData.home.members);
-                    return; // Success, exit function
-                } else {
-                    console.warn('Failed to load specific home, trying user homes endpoint');
-                    // Continue to load all homes if specific home fails
-                }
-            } catch (specificHomeError) {
-                console.error('Error loading specific home:', specificHomeError);
-                // Continue to try loading all homes
-            }
-        }
-
-        // Load all user homes as fallback
-        console.log('Fetching all user homes');
-        const response = await fetch('/api/homes/user/homes', {
+        // Fetch home data from API
+        const token = await firebase.auth().currentUser.getIdToken();
+        const response = await fetch(`/api/homes/${homeId}`, {
+            method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
-
-        if (!response.ok) {
-            console.error('Failed to fetch homes, status:', response.status);
-            throw new Error('Failed to fetch home data, status: ' + response.status);
-        }
-
-        const data = await response.json();
-        console.log('User homes data:', data);
         
-        if (data.homes && data.homes.length > 0) {
-            const home = data.homes[0];
-            // Store the current home ID
-            localStorage.setItem('currentHomeId', home.homeId);
-            displayHomeInfo(home);
-            displayMembers(home.members);
+        if (!response.ok) {
+            throw new Error('Failed to load home data');
+        }
+        
+        // Parse the response
+        const responseData = await response.json();
+        console.log('Home data response:', responseData);
+        
+        // Handle different response structures
+        // Sometimes the API returns the home directly, sometimes nested in a 'home' property
+        let homeData;
+        if (responseData.home) {
+            homeData = responseData.home;
+            console.log('Home data found in home property:', homeData);
         } else {
-            console.log('No homes found, redirecting to create-join-home');
-            // Only redirect if we're not already on the create-join-home page
-            if (!window.location.pathname.includes('create-join-home.html')) {
-                window.location.href = '/create-join-home.html';
-            }
+            homeData = responseData;
+            console.log('Home data found directly in response:', homeData);
+        }
+        
+        // Basic validation
+        if (!homeData || (!homeData.homeId && !homeData._id)) {
+            console.error('Invalid home data received:', homeData);
+            throw new Error('Invalid home data received from server');
+        }
+        
+        // Normalize the homeId (it could be homeId or _id depending on the API)
+        homeData.homeId = homeData.homeId || homeData._id;
+        
+        // Make sure selectedHome is also set for the chat feature
+        localStorage.setItem('selectedHome', JSON.stringify({
+            homeId: homeData.homeId,
+            name: homeData.name || 'My Home',
+            members: homeData.members || []
+        }));
+        
+        // Display home info
+        displayHomeInfo(homeData);
+        
+        // Display members list
+        if (homeData.members && homeData.members.length > 0) {
+            displayMembers(homeData.members);
+        } else {
+            document.getElementById('members-list').innerHTML = '<li class="list-item">No members found</li>';
         }
     } catch (error) {
         console.error('Error loading home data:', error);
-        showAlert('Failed to load home data. Please try again.', 'error');
+        showAlert('Error loading home data: ' + error.message, 'error');
     }
 }
 
 // Display home information
 function displayHomeInfo(home) {
+    console.log('Displaying home info:', home);
     const homeNameElement = document.getElementById('current-home-name');
     const homeIdElement = document.getElementById('home-id');
     
     if (homeNameElement) {
         homeNameElement.textContent = home.name || 'No Home';
+        console.log('Set home name to:', home.name || 'No Home');
+    } else {
+        console.error('Home name element not found');
     }
     
     if (homeIdElement && home.homeId) {
         homeIdElement.textContent = `ID: ${home.homeId}`;
+        console.log('Set home ID to:', home.homeId);
+    } else {
+        console.error('Home ID element not found or homeId missing');
     }
 }
 
 // Display members list
 function displayMembers(members) {
+    console.log('Displaying members:', members);
     const membersList = document.getElementById('members-list');
-    if (!membersList) return;
+    if (!membersList) {
+        console.error('Members list element not found');
+        return;
+    }
 
     membersList.innerHTML = '';
     
     if (!members || members.length === 0) {
+        console.log('No members found');
         membersList.innerHTML = '<li class="list-item">No members found</li>';
         return;
     }
 
     const currentUser = firebase.auth().currentUser;
-    if (!currentUser) return;
+    if (!currentUser) {
+        console.error('Current user not found');
+        return;
+    }
+    
+    console.log('Current user:', currentUser.email);
 
     members.forEach(member => {
+        // Skip invalid members
+        if (!member || (!member.email && !member.uid)) {
+            console.warn('Invalid member data:', member);
+            return;
+        }
+        
         const memberItem = document.createElement('li');
         memberItem.className = 'list-item';
         
-        const isCurrentUser = member.email === currentUser.email;
+        // Get member name and email, with fallbacks
+        const memberName = member.name || member.displayName || 'Unknown User';
+        const memberEmail = member.email || 'No email';
+        const memberUid = member.uid || member._id || '';
+        
+        // Check if this is the current user (by email or uid)
+        const isCurrentUser = 
+            (member.email && member.email === currentUser.email) || 
+            (member.uid && member.uid === currentUser.uid);
+        
         memberItem.innerHTML = `
             <div class="member-info">
-                <span class="member-name">${member.name}</span>
+                <span class="member-name">${memberName}</span>
                 ${isCurrentUser ? '<span class="member-badge">You</span>' : ''}
-                <span class="member-email">${member.email}</span>
+                <span class="member-email">${memberEmail}</span>
             </div>
         `;
         
         membersList.appendChild(memberItem);
+        console.log(`Added member: ${memberName} (${memberEmail}), isCurrentUser: ${isCurrentUser}`);
     });
 }
 
